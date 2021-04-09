@@ -18,14 +18,11 @@ For more information on how to get started, please refer to the **[Wiki user man
 | PLUGINS | Description |
 | ------ | ------ |
 | [EEGLAB v2021.0](https://github.com/sccn/eeglab) | Main software that manages most of the preprocessing and analyses toolboxes described in the table below |
-| [BLINKER v1.1.2](http://vislab.github.io/EEG-Blinks/) | BLINKER  is an automated pipeline for detecting eye blinks in EEG and calculating various properties of these blinks | 
+| [bids-matlab-tools v5.3.1](https://github.com/sccn/bids-matlab-tools) | BIDS is the plugin enabling the generation of BIDS metadata | 
+| [bids-validator v1.1](https://github.com/bids-standard/bids-validator)| This plugin performs validation of the generated BIDS metadata according to Openneuro |
 | [CleanLine v2.0](https://github.com/sccn/cleanline) | This plugin adaptively estimates and removes sinusoidal (e.g. line) noise from your ICA components or scalp channels using multi-tapering and a Thompson F-statistic |
-| [Clean_rawdata v2.3](https://github.com/sccn/clean_rawdata)| This plugin is used solely for the vis_artifacts.m function for the ICA script |
-|[ICLabel v1.3](https://github.com/sccn/ICLabel)|An automatic EEG independent component classifer plugin |
-|[EEGInterp](https://d-nb.info/1175873608/34)| Homemade function to compute multiquadric interpolation based on radial basis function |
 
 Isolated functions:
-* [saveeph](https://sites.google.com/site/cartoolcommunity/files)
 * [natsort](https://ch.mathworks.com/matlabcentral/fileexchange/47434-natural-order-filename-sort)
 
 The dependencies are already included in the Functions folder and loaded automatically.
