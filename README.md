@@ -11,7 +11,7 @@ A log is generated after each run to explain what was done to the files.
 
 For more information on how to get started, please refer to the **[Wiki user manual](https://github.com/CorentinWicht/autoERP2.0/wiki)**.
 
-**⚠️ Currently only compatible with raw .bdf (BioSemi) files with 64 channels**
+**⚠️ Currently only compatible with raw .bdf (BioSemi) files**
 
 
 ## Dependencies
