@@ -182,9 +182,7 @@ if str2double(MetaData) == 1
         Excel.Visible = 1; 
 
         % Wait Bar 
-        Fig=msgbox(['Please fill the excel sheet with Participants metadata.',...
-            newline 'The sheet was autofilled with most important information, please do not delete!'... 
-            newline newline 'THE CODE WILL CONTINUE ONCE YOU PRESS OK'],'WAIT','warn'); 
+        Fig=msgbox('THE CODE WILL CONTINUE ONCE YOU PRESS OK','WAIT','warn'); 
         uiwait(Fig);
         close all
         Excel.ActiveWorkbook.Save; 
