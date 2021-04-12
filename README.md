@@ -3,7 +3,7 @@
 ## Description:
 LNS automated MATLAB script for EEG data BIDS generation using EEGLAB BIDS plugin (see below in Dependencies). 
 
-For more information on how to get started, please refer to the **[Wiki user manual](https://github.com/CorentinWicht/autoERP2.0/wiki)**.
+For more information on how to get started, please refer to the **[Wiki user manual](https://github.com/CorentinWicht/autoBIDS/wiki)**.
 
 **⚠️ Currently only compatible with raw .bdf (BioSemi) files**
 
