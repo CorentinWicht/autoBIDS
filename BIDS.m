@@ -12,14 +12,14 @@
 % https://github.com/CorentinWicht/autoBIDS
 %% Authors
 
-% Michael Mouthon (script, protocol)
 % Corentin Wicht(script, protocol)
+% Michael Mouthon (script, protocol)
 % Lucas Spierer (protocol)
 
 % If you have questions or want to contribute to this pipeline, feel free 
 % to contact :
+% corentin.wicht@unifr.ch, corentinw.lcns@gmail.com
 % michael.mouthon@unifr.ch 
-% corentin.wicht@unifr.ch
 
 % Laboratory for Neurorehabilitation Science
 % Neurology Unit, Medicine Section
@@ -28,7 +28,7 @@
 % Ch. du Musée 5, CH-1700 Fribourg
 % https://www3.unifr.ch/med/spierer/en/
 
-% Version 5.0, March 2021
+% Version 0.1, April 2021
 %% Clear workspace, etc
 clear variables;close all;clc
 %% Parameters prompts
@@ -83,38 +83,91 @@ BIDSParamInstruct = {'What is the matching pattern for SUBJECTS (e.g. P* if P1, 
     newline 'Comment: [1] is faster and as accurate.']};
 PromptValues = {'P*','1','GNG;RVIP','1','','0','S*','1','1'};
 PromptInputs = inputdlg(BIDSParamInstruct,'BIDS design parameters',1,PromptValues);
-SubjPattern = PromptInputs{1}; 
+Subj = PromptInputs{1}; 
+SubjPattern = str2double(PromptInputs{2});
 Task = strsplit(PromptInputs{3},';'); 
-TaskPattern = PromptInputs{4}; 
+TaskPattern = str2double(PromptInputs{4}); 
 Run = PromptInputs{5}; 
-RunPattern = PromptInputs{6}; 
+RunPattern = str2double(PromptInputs{6}); 
 Session = PromptInputs{7}; 
-SessionPattern = PromptInputs{8}; 
+SessionPattern = str2double(PromptInputs{8}); 
 MetaData = PromptInputs{9}; 
 
 % Retrieving list of Subjects
-StrPattern = ['(?<=' strrep(SubjPattern,'*','') ')[0-9]*'];
-if str2double(PromptInputs{2}) == 1 % subject string pattern in files
+StrPattern = ['(?<=' strrep(Subj,'*','') ')[0-9]*'];
+if SubjPattern == 1 % subject string pattern in files
     SubjList = cellfun(@(x) str2double(regexp(x, StrPattern, 'match')),{FileList.name}');
-elseif str2double(PromptInputs{2}) == 2 % subject string pattern in folders
+elseif SubjPattern == 2 % subject string pattern in folders
     SubjList = cellfun(@(x) str2double(regexp(x, StrPattern, 'match')),{FileList.folder}');
 end
 
 %% GENERATING EXCEL TEMPLATE PARTICIPANT FILE
 
-% Could be improved based on responses above !
-
 if str2double(MetaData) == 1
     if ~isfile('ParticipantInfo_BIDS.xlsx') % only if file doesn't exist yet
-        % 1. PARTICIPANTS
-        %1.1 Data sheet
-        PartTab = [{FileList.name}' num2cell(SubjList)];
+        
+        % Column names
+        ColNames = {'EEGFiles','Participant'};
+        
+        % 1. Data sheet
+        if SubjPattern == 1 
+            PartTab = [{FileList.name}' num2cell(SubjList)];
+        elseif SubjPattern == 2
+            TEMP = [{FileList.folder}' repmat({'\'},length(FileList),1) {FileList.name}'];
+            Dat = cell(size(TEMP,1),1);
+            for k=1:size(TEMP,1); Dat{k,:} = horzcat(TEMP{k,:});
+            end
+            PartTab = [Dat num2cell(SubjList)];
+        end
+        
+        % Content is adjusted based on responses to BIDS prompt
+        % 1.1 Task
+        if length(Task)>1; TEMP = cell(size(PartTab,1),1);
+            ColNames = [ColNames {'Task'}];
+            for k=1:size(PartTab,1)
+                TEMP{k} = Task{cellfun(@(x) contains(PartTab{k,1},x),Task)};
+            end
+            PartTab = [PartTab TEMP];
+        else
+            ColNames = [ColNames {'Task'}];
+            PartTab = [PartTab repmat(Task,size(PartTab,1),1)];
+        end
+        
+        % 1.2 Run
+        StrPattern = ['(?<=' strrep(Run,'*','') ')[0-9]*'];
+        if RunPattern == 1; TEMP = cell(size(PartTab,1),1);
+            ColNames = [ColNames {'Run'}];
+            for k=1:size(PartTab,1)
+                TEMP{k} = str2double(regexp(PartTab{k,1}, StrPattern, 'match'));
+            end; PartTab = [PartTab TEMP];
+        elseif RunPattern == 2; TEMP = cell(size(PartTab,1),1);
+            ColNames = [ColNames {'Run'}];
+            for k=1:size(PartTab,1)
+                TEMP{k} = str2double(regexp(PartTab{k,1}, StrPattern, 'match'));
+            end; PartTab = [PartTab TEMP];
+        end
+        
+        % 1.3 Session
+        StrPattern = ['(?<=' strrep(Session,'*','') ')[0-9]*'];
+        if SessionPattern == 1; TEMP = cell(size(PartTab,1),1);
+            ColNames = [ColNames {'Session'}];
+            for k=1:size(PartTab,1)
+                TEMP{k} = str2double(regexp(PartTab{k,1}, StrPattern, 'match'));
+            end; PartTab = [PartTab TEMP];
+        elseif SessionPattern == 2; TEMP = cell(size(PartTab,1),1);
+            ColNames = [ColNames {'Session'}];
+            for k=1:size(PartTab,1)
+                TEMP{k} = str2double(regexp(PartTab{k,1}, StrPattern, 'match'));
+            end; PartTab = [PartTab TEMP];
+        end
+        
+        % Write the excel file
         PartTab = [PartTab  cell(length(FileList),2)];
-        PartTab = cell2table(PartTab,'VariableNames',{'EEGFiles','Participant',...
-            'HeadCircumference','SubjectArtefactDescription'});
+        ColNames = [ColNames {'HeadCircumference','SubjectArtefactDescription'}]; 
+        PartTab = cell2table(PartTab,'VariableNames',ColNames);
         writetable(PartTab,'ParticipantInfo_BIDS.xlsx','Sheet','DATA')
 
-        %1.1 Description sheet
+        % 2. Description sheet
         ColNames = PartTab.Properties.VariableNames';
         PartDesc = [ColNames cell(length(ColNames),2)];
         PartDesc = cell2table(PartDesc,'VariableNames',{'Vars','Description','Levels'});
@@ -203,25 +256,25 @@ if strcmp(LoadSTUDY,'NO')
         EEG.filepath = FileList(i).folder;
         EEG.subject = num2str(SubjList(i));
         % 1.TASK INFORMATION
-        if str2double(TaskPattern)==1; EEG.task = Task{cellfun(@(x) contains(EEG.filename,x),Task)};
-        elseif str2double(TaskPattern)==2; EEG.task = Task{cellfun(@(x) contains(EEG.filepath,x),Task)};
+        if TaskPattern==1; EEG.task = Task{cellfun(@(x) contains(EEG.filename,x),Task)};
+        elseif TaskPattern==2; EEG.task = Task{cellfun(@(x) contains(EEG.filepath,x),Task)};
         else; EEG.task = '';
         end
         
         % 2.RUN INFORMATION
         StrPattern = ['(?<=' strrep(Run,'*','') ')[0-9]*'];
-        if str2double(RunPattern)==1 % Matching pattern in files
+        if RunPattern==1 % Matching pattern in files
             EEG.run = str2double(regexp(EEG.filename, StrPattern, 'match'));
-        elseif str2double(RunPattern)==2 % Matching patter in folders
+        elseif RunPattern==2 % Matching patter in folders
             EEG.run = str2double(regexp(EEG.filepath, StrPattern, 'match'));
         else; EEG.run = [];
         end
         
         % 3.SESSION INFORMATION
         StrPattern = ['(?<=' strrep(Session,'*','') ')[0-9]*'];
-        if str2double(SessionPattern)==1 % Matching pattern in files
+        if SessionPattern==1 % Matching pattern in files
             EEG.session = str2double(regexp(EEG.filename, StrPattern, 'match'));
-        elseif str2double(SessionPattern)==2 % Matching patter in folders
+        elseif SessionPattern==2 % Matching patter in folders
             EEG.session = str2double(regexp(EEG.filepath, StrPattern, 'match'));
         else; EEG.session = [];
         end
