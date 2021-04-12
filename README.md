@@ -1,13 +1,7 @@
 # autoBIDS
 
 ## Description:
-LNS automated MATLAB script for EEG data BIDS generation using EEGLAB BIDS plugin XXX
-
-Flexible and adaptable to all designs and folder trees.
-
-All steps can be skiped. All default values can be modified.
-
-A log is generated after each run to explain what was done to the files.
+LNS automated MATLAB script for EEG data BIDS generation using EEGLAB BIDS plugin (see below in Dependencies). 
 
 For more information on how to get started, please refer to the **[Wiki user manual](https://github.com/CorentinWicht/autoERP2.0/wiki)**.
 
