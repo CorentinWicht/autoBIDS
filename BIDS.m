@@ -199,18 +199,6 @@ if str2double(MetaData) == 1
     PartInfoDesc = table2cell(PartInfoDesc);
 end
 
-%% MATCHING EEG & EXCEL FILES 
-
-if PartFiltIdx~=0 % ONLY IF EXCEL FILE PROVIDED
-    % Checking if same number of EEG files than lines in Excel file
-    if length(FileList) ~= size(PartInfoData,1)
-       error(['! The number of lines in the excel file is not the same as the number of EEG files !', ...
-           newline 'EEG files: ' num2str( length(FileList)), ...
-           newline 'Behav files: ' num2str(size(PartInfoData,1)),...
-           newline newline 'Make sure to match them before restarting the script.']) ;
-    end
-end
-
 %% LOADING DATA & BUILDING STUDY 
 
 % Prompt to load existing STUDY
