@@ -17,7 +17,8 @@ For more information on how to get started, please refer to the **[Wiki user man
 | [CleanLine v2.0](https://github.com/sccn/cleanline) | This plugin adaptively estimates and removes sinusoidal (e.g. line) noise from your ICA components or scalp channels using multi-tapering and a Thompson F-statistic |
 
 Isolated functions:
-* [natsort](https://ch.mathworks.com/matlabcentral/fileexchange/47434-natural-order-filename-sort)
+* [natsort v2.1.2](https://ch.mathworks.com/matlabcentral/fileexchange/47434-natural-order-filename-sort)
+* [inputsdlg v2.3.2.0](https://ch.mathworks.com/matlabcentral/fileexchange/25862-inputsdlg-enhanced-input-dialog-box)
 
 The dependencies are already included in the Functions folder and loaded automatically.
 
