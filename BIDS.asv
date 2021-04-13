@@ -29,9 +29,9 @@
 % https://www3.unifr.ch/med/spierer/en/
 
 % Version 0.1, April 2021
-%% Clear workspace, etc
-clear variables;close all;clc
+
 %% Parameters prompts
+clear variables;close all;clc % Clear workspace, etc
 
 % Paths
 addpath([pwd '\Functions'])
@@ -50,12 +50,14 @@ FileList = FileList(NatSortIdx); % Natural order
 mrk_folder = uigetdir('title',...
     ['OPTIONAL: Choose the path of your most upper folder containing your .mrk files' ...
     ' (if no file, press CANCEL)']);
-MRKList = dir([mrk_folder '\**/*.mrk']);
-[~,NatSortIdx] = natsort({MRKList.name});
-MRKList = MRKList(NatSortIdx); % Natural order
+if ~isempty(mrk_folder) % useless if not provided
+    MRKList = dir([mrk_folder '\**/*.mrk']);
+    [~,NatSortIdx] = natsort({MRKList.name});
+    MRKList = MRKList(NatSortIdx); % Natural order
+end
 
 % Specify the path of the electrodes localisation file
-[chanloc_file,chanloc_path] = uigetfile('*.*', 'Select the electrodes localisation file for your data (.loc or .xyz)');
+[chanloc_file,chanloc_path] = uigetfile([pwd '\ChanLocs\*.*'], 'Select the electrodes localisation file for your data (.loc or .xyz)');
 chanloc_path=[chanloc_path,chanloc_file]; 
 
 % PROMPTS
@@ -152,153 +154,158 @@ end
 
 %% GENERATING EXCEL TEMPLATE PARTICIPANT FILE
 
-
+% If automated method
 if MetaData == 1
-    if ~isfile('ParticipantInfo_BIDS.xlsx') % only if file doesn't exist yet
-        
-        % Column names
-        ColNames = {'EEGFiles','Participant'};
-        
-        % 1. Data sheet
-        if SubjLoc == 1 
-            PartTab = [{FileList.name}' num2cell(SubjList)];
-        elseif SubjLoc == 2
-            TEMP = [{FileList.folder}' repmat({'\'},length(FileList),1) {FileList.name}'];
-            Dat = cell(size(TEMP,1),1);
-            for k=1:size(TEMP,1); Dat{k,:} = horzcat(TEMP{k,:});
-            end
-            PartTab = [Dat num2cell(SubjList)];
-        end
-        
-        % Content is adjusted based on responses to BIDS prompt
-        % 1.1 Task
-        if length(TaskPattern)>1; TEMP = cell(size(PartTab,1),1);
-            ColNames = [ColNames {'Task'}];
-            for k=1:size(PartTab,1)
-                TEMP{k} = TaskPattern{cellfun(@(x) contains(PartTab{k,1},x),TaskPattern)};
-            end
-            PartTab = [PartTab TEMP];
-        elseif length(TaskPattern)==1
-            ColNames = [ColNames {'Task'}];
-            PartTab = [PartTab repmat(TaskPattern,size(PartTab,1),1)];
-        end
-        
-        % 1.2 Run
-        StrPattern = ['(?<=' strrep(RunPattern,'*','') ')[0-9]*'];
-        if ~isempty(RunPattern) && RunLoc == 1 
-            TEMP = cell(size(PartTab,1),1);
-            ColNames = [ColNames {'Run'}];
-            for k=1:size(PartTab,1)
-                TEMP{k} = str2double(regexp(PartTab{k,1}, StrPattern, 'match'));
-            end; PartTab = [PartTab TEMP];
-        elseif ~isempty(RunPattern) && RunLoc == 2 
-            TEMP = cell(size(PartTab,1),1);
-            ColNames = [ColNames {'Run'}];
-            for k=1:size(PartTab,1)
-                TEMP{k} = str2double(regexp(PartTab{k,1}, StrPattern, 'match'));
-            end; PartTab = [PartTab TEMP];
-        end
-        
-        % 1.3 Session
-        StrPattern = ['(?<=' strrep(SessionPattern,'*','') ')[0-9]*'];
-        if ~isempty(SessionPattern) && SessionLoc == 1 
-            TEMP = cell(size(PartTab,1),1);
-            ColNames = [ColNames {'Session'}];
-            for k=1:size(PartTab,1)
-                TEMP{k} = str2double(regexp(PartTab{k,1}, StrPattern, 'match'));
-            end; PartTab = [PartTab TEMP];
-        elseif ~isempty(SessionPattern) && SessionLoc == 2 
-            TEMP = cell(size(PartTab,1),1);
-            ColNames = [ColNames {'Session'}];
-            for k=1:size(PartTab,1)
-                TEMP{k} = str2double(regexp(PartTab{k,1}, StrPattern, 'match'));
-            end; PartTab = [PartTab TEMP];
-        end
-        
-        %% NEW METHOD W/O EXCEL 
-        % 1) PARTICIPANT INFO DATA
-        % Matrix to integrate in the following uitable
-        PartTab = [PartTab  cell(length(FileList),2)];
-        ColNames = [ColNames {'HeadCircumference','SubjectArtefactDescription'}]; 
-        ToDisp = [ColNames cell(1,5);PartTab cell(size(PartTab,1),5)];
 
-        % Select folders on which to apply analyses       
-        f = figure('unit','normalized','Position',[0.15 0.15 0.7 0.7]);
-        fPos= get(f, 'position');
-        p=uitable('Parent', f,'unit','normalized','Position', [0.15 0.15 0.7 0.7],...
-        'Data',ToDisp,'ColumnEdit',true,'RowName',[{'Variables'} cell(1,size(PartTab,1)-1)],...
-        'CellEditCallBack','DATA = get(gco,''Data'');');
-        uicontrol('Style', 'text','unit','normalized','Position',[0.1 0.85 0.85 0.1], 'String',...
-                {'PARTICIPANT INFORMATION DATA','You can add more information if needed (first line = name of each variable).'});
-        % Wait for t to close until running the rest of the script
-        waitfor(p)
-
-        % If table modified
-        if exist('DATA','var') 
-            ColNames = DATA(1,:);
-            PartTab = DATA(2:end,:);
-        end
-        
-        % Removing empty columns
-        Idx = sum(~cellfun('isempty', PartTab),1)>0;
-        PartTab = PartTab(:,sum(~cellfun('isempty', PartTab),1)>0);
-        ColNames = ColNames(Idx);
-        
-        % Identify categorical variables remaining
-        ToDisp = cell(length(ColNames),10);
-        Cat = {'Task','Run','Session'};
-        for k=1:length(Cat)
-            if nnz(ismember(ColNames,Cat{k}))
-                Idx = ismember(ColNames,Cat{k});
-                try % if cell array of strings
-                    ToDisp(Idx,2:length(unique(PartTab(:,Idx))') = unique(PartTab(:,Idx))';
-                catch % if cell array of integers
-                    CatLevels.(Cat{k}) = num2cell(unique(cell2mat(PartTab(:,ismember(ColNames,Cat{k}))))');
-                end
-            end
-        end
-        
-        % Changing to table format
-        PartTab = cell2table(PartTab,'VariableNames',ColNames);
-        
-        
-        % 2) VARIABLES DESC
-        % Matrix to integrate in the following uitable
-        
-        ToDis
-
-        % Select folders on which to apply analyses       
-        f = figure('unit','normalized','Position',[0.15 0.15 0.7 0.7]);
-        fPos= get(f, 'position');
-        ColumnNames = [{'Description'} strseq('Levels',1:size(ToDisp,2)-2)'];
-        p=uitable('Parent', f,'unit','normalized','Position', [0.15 0.15 0.7 0.7],...
-        'Data',ToDisp,'ColumnEdit',true,'RowName',ColNames,'ColumnName',ColumnNames,...
-        'CellEditCallBack','DESC = get(gco,''Data'');');
-        uicontrol('Style', 'text','unit','normalized','Position',[0.1 0.85 0.85 0.1], 'String',...
-                {'VARIABLES DESCRIPTION',['For each variable (line) :' newline,...
-                '1) Give a brief description.',newline...
-                '2) Indicate the name of the levels for categorical variables (in line, e.g. Session1 | Session2)']});
-        % Wait for t to close until running the rest of the script
-        waitfor(p)
-        
-        % If table not modified 
-        if ~exist('DESC','var') 
-            DESC = [ColNames' ToDisp];
-        else
-            DESC = [ColNames' DESC];
-        end
-        
-        % Remove empty columns
-        DESC = DESC(:,sum(~cellfun('isempty', DESC),1)>0);
-        
-        % Changing to table
-        DESC = cell2table(DESC,'VariableNames',VarNames(1:size(DESC,2)));
-        
-        % Write the excel file
-        writetable(PartTab,'ParticipantInfo_BIDS.xlsx','Sheet','DATA')
-        writetable(DESC,'ParticipantInfo_BIDS.xlsx','Sheet','DESC')
-
+    % Column names
+    ColNames = {'EEGFiles','Participant'};
+    
+    % Extracting filenames and filepaths + names
+    FileNames = {FileList.name}';
+    TEMP = [{FileList.folder}' repmat({'\'},length(FileList),1) {FileList.name}'];
+    FileNamesPath = cell(size(TEMP,1),1);
+    for k=1:size(TEMP,1); FileNamesPath{k,:} = horzcat(TEMP{k,:});
     end
+
+    % 1. Data sheet
+    if SubjLoc == 1 
+        PartTab = [FileNames num2cell(SubjList)];
+    elseif SubjLoc == 2
+        PartTab = [FileNamesPath num2cell(SubjList)];
+    end
+
+    % Content is adjusted based on responses to BIDS prompt
+    % 1.1 Task
+    if length(TaskPattern)>1; TEMP = cell(size(PartTab,1),1);
+        ColNames = [ColNames {'Task'}];
+        for k=1:size(PartTab,1)
+            if TaskLoc == 1
+                    TEMP{k} = TaskPattern{cellfun(@(x) contains(FileNames{k},x),TaskPattern)};
+
+            elseif TaskLoc == 2
+                TEMP{k} = TaskPattern{cellfun(@(x) contains(FileNamesPath{k},x),TaskPattern)};
+            end
+        end
+        PartTab = [PartTab TEMP];
+    elseif length(TaskPattern)==1
+        ColNames = [ColNames {'Task'}];
+        PartTab = [PartTab repmat(TaskPattern,size(PartTab,1),1)];
+    end
+
+    % 1.2 Run
+    StrPattern = ['(?<=' strrep(RunPattern,'*','') ')[0-9]*'];
+    if ~isempty(RunPattern) && RunLoc == 1 
+        TEMP = cell(size(PartTab,1),1);
+        ColNames = [ColNames {'Run'}];
+        for k=1:size(PartTab,1)
+            TEMP{k} = str2double(regexp(FileNames{k}, StrPattern, 'match'));
+        end; PartTab = [PartTab TEMP];
+    elseif ~isempty(RunPattern) && RunLoc == 2 
+        TEMP = cell(size(PartTab,1),1);
+        ColNames = [ColNames {'Run'}];
+        for k=1:size(PartTab,1)
+            TEMP{k} = str2double(regexp(FileNamesPath{k}, StrPattern, 'match'));
+        end; PartTab = [PartTab TEMP];
+    end
+
+    % 1.3 Session
+    StrPattern = ['(?<=' strrep(SessionPattern,'*','') ')[0-9]*'];
+    if ~isempty(SessionPattern) && SessionLoc == 1 
+        TEMP = cell(size(PartTab,1),1);
+        ColNames = [ColNames {'Session'}];
+        for k=1:size(PartTab,1)
+            TEMP{k} = str2double(regexp(FileNames{k}, StrPattern, 'match'));
+        end; PartTab = [PartTab TEMP];
+    elseif ~isempty(SessionPattern) && SessionLoc == 2 
+        TEMP = cell(size(PartTab,1),1);
+        ColNames = [ColNames {'Session'}];
+        for k=1:size(PartTab,1)
+            TEMP{k} = str2double(regexp(FileNamesPath{k}, StrPattern, 'match'));
+        end; PartTab = [PartTab TEMP];
+    end
+
+    % 1) PARTICIPANT INFO DATA
+    % Matrix to integrate in the following uitable
+    PartTab = [PartTab  cell(length(FileList),2)];
+    ColNames = [ColNames {'HeadCircumference','SubjectArtefactDescription'}]; 
+    ToDisp = [ColNames cell(1,5);PartTab cell(size(PartTab,1),5)];
+
+    % Select folders on which to apply analyses       
+    f = figure('unit','normalized','Position',[0.15 0.15 0.7 0.7]);
+    fPos= get(f, 'position');
+    p=uitable('Parent', f,'unit','normalized','Position', [0.15 0.15 0.7 0.7],...
+    'Data',ToDisp,'ColumnEdit',true,'RowName',[{'Variables'} cell(1,size(PartTab,1)-1)],...
+    'CellEditCallBack','DATA = get(gco,''Data'');');
+    uicontrol('Style', 'text','unit','normalized','Position',[0.1 0.85 0.85 0.1], 'String',...
+            {'PARTICIPANT INFORMATION DATA','You can add more information if needed (first line = name of each variable).'});
+    % Wait for t to close until running the rest of the script
+    waitfor(p)
+
+    % If table modified
+    if exist('DATA','var') 
+        ColNames = DATA(1,:);
+        PartTab = DATA(2:end,:);
+    end
+
+    % Removing empty columns
+    Idx = sum(~cellfun('isempty', PartTab),1)>0;
+    PartTab = PartTab(:,sum(~cellfun('isempty', PartTab),1)>0);
+    ColNames = ColNames(Idx);
+
+    % Identify categorical variables remaining
+    ToDisp = cell(length(ColNames),10); % Matrix to integrate in the following uitable
+    Cat = {'Task','Run','Session'};
+    for k=1:length(Cat)
+        Idx = ismember(ColNames,Cat{k});
+        if nnz(Idx)
+            try % if cell array of strings
+                ToDisp(Idx,2:2+length(unique(PartTab(:,Idx)))-1) = unique(PartTab(:,Idx))';
+            catch % if cell array of integers
+                ToDisp(Idx,2:2+length(unique(cell2mat(PartTab(:,Idx))))-1) = ...
+                    unique(cellfun(@(x) num2str(x),PartTab(:,ismember(ColNames,Cat{k})),'UniformOutput',0))';
+            end
+        end
+    end
+
+    % Changing to table format
+    PartTab = cell2table(PartTab,'VariableNames',ColNames);
+
+
+    % 2) VARIABLES DESC
+
+    % Select folders on which to apply analyses       
+    f = figure('unit','normalized','Position',[0.15 0.15 0.7 0.7]);
+    fPos= get(f, 'position');
+    ColumnNames = [{'Description'} strseq('Levels',1:size(ToDisp,2)-2)'];
+    p=uitable('Parent', f,'unit','normalized','Position', [0.15 0.15 0.7 0.7],...
+    'Data',ToDisp,'ColumnEdit',true,'RowName',ColNames,'ColumnName',ColumnNames,...
+    'CellEditCallBack','DESC = get(gco,''Data'');');
+    uicontrol('Style', 'text','unit','normalized','Position',[0.1 0.85 0.85 0.1], 'String',...
+            {'VARIABLES DESCRIPTION',['For each variable (line) :' newline,...
+            '1) Give a brief description.',newline...
+            '2) Rename the levels for each categorical variables.']});
+    % Wait for t to close until running the rest of the script
+    waitfor(p)
+
+    % If table not modified 
+    if ~exist('DESC','var') 
+        DESC = [ColNames' ToDisp];
+    else
+        DESC = [ColNames' DESC];
+    end
+
+    % Remove empty columns
+    DESC = DESC(:,sum(~cellfun('isempty', DESC),1)>0);
+
+    % Changing to table
+    DESC = cell2table(DESC,'VariableNames',VarNames(1:size(DESC,2)));
+
+    % Write the excel file
+    if isfile('ParticipantInfo_BIDS.xlsx')
+        delete ParticipantInfo_BIDS.xlsx % Need to remove it to avoid data to stack
+    end
+    writetable(PartTab,'ParticipantInfo_BIDS.xlsx','Sheet','DATA')
+    writetable(DESC,'ParticipantInfo_BIDS.xlsx','Sheet','DESC')
 
     % Load data
     PartInfoData = readtable('ParticipantInfo_BIDS.xlsx','Sheet','DATA');
