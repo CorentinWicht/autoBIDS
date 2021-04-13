@@ -1,1 +1,4 @@
 *.xlsx
+*.study
+TEMP/*
+BIDS_EXPORT/*
