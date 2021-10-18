@@ -11,8 +11,8 @@ For more information on how to get started, please refer to the **[Wiki user man
 ## Dependencies
 | PLUGINS | Description |
 | ------ | ------ |
-| [EEGLAB v2021.0](https://github.com/sccn/eeglab) | Main software that manages most of the preprocessing and analyses toolboxes described in the table below |
-| [bids-matlab-tools v5.3.1](https://github.com/sccn/bids-matlab-tools) | BIDS is the plugin enabling the generation of BIDS metadata | 
+| [EEGLAB v2021.1](https://github.com/sccn/eeglab) | Main software that manages most of the preprocessing and analyses toolboxes described in the table below |
+| [bids-matlab-tools v5.4](https://github.com/sccn/bids-matlab-tools) | BIDS is the plugin enabling the generation of BIDS metadata | 
 | [bids-validator v1.1](https://github.com/bids-standard/bids-validator)| This plugin performs validation of the generated BIDS metadata according to Openneuro |
 | [CleanLine v2.0](https://github.com/sccn/cleanline) | This plugin adaptively estimates and removes sinusoidal (e.g. line) noise from your ICA components or scalp channels using multi-tapering and a Thompson F-statistic |
 
