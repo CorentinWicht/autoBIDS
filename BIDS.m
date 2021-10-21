@@ -37,7 +37,7 @@ clear variables;close all;clc % Clear workspace, etc
 addpath([pwd '\Functions'])
 addpath([pwd '\Functions\inputsdlg'])
 addpath([pwd '\Functions\num2words'])
-addpath([pwd '\Functions\eeglab2021.0'])
+addpath([pwd '\Functions\eeglab2021.1'])
 
 % Run EEGLAB (necessary to access functions)
 STUDY = []; CURRENTSTUDY = 0; ALLEEG=[]; EEG=[]; CURRENTSET=[]; 
@@ -64,6 +64,9 @@ if ~isempty(mrk_folder) % useless if not provided
     [~,NatSortIdx] = natsort({MRKList.name});
     MRKList = MRKList(NatSortIdx); % Natural order
 end
+
+% Path of the folder to save the STUDY and related data
+SavePath = uigetdir('title','Choose the folder where to save your study and related .set files');
 
 % Specify the path of the electrodes localisation file
 [chanloc_file,chanloc_path] = uigetfile([pwd '\ChanLocs\*.*'], 'Select the electrodes localisation file for your data (.loc or .xyz)');
@@ -317,17 +320,17 @@ if MetaData == 1
     DESC = cell2table(DESC,'VariableNames',VarNames(1:size(DESC,2)));
 
     % Write the excel file
-    if isfile('ParticipantInfo_BIDS.xlsx')
-        delete ParticipantInfo_BIDS.xlsx % Need to remove it to avoid data to stack upon older one
+    if isfile([SavePath '\ParticipantInfo_BIDS.xlsx'])
+        delete([SavePath '\ParticipantInfo_BIDS.xlsx']) % Need to remove it to avoid data to stack upon older one
     end
-    writetable(PartTab,'ParticipantInfo_BIDS.xlsx','Sheet','DATA')
-    writetable(DESC,'ParticipantInfo_BIDS.xlsx','Sheet','DESC')
+    writetable(PartTab,[SavePath '\ParticipantInfo_BIDS.xlsx'],'Sheet','DATA')
+    writetable(DESC,[SavePath '\ParticipantInfo_BIDS.xlsx'],'Sheet','DESC')
 
     % Load data
-    PartInfoData = readtable('ParticipantInfo_BIDS.xlsx','Sheet','DATA');
+    PartInfoData = readtable([SavePath '\ParticipantInfo_BIDS.xlsx'],'Sheet','DATA');
     PartInfoColNames = PartInfoData.Properties.VariableNames;
     PartInfoData = table2cell(PartInfoData);
-    PartInfoDesc = readtable('ParticipantInfo_BIDS.xlsx','Sheet','DESC');
+    PartInfoDesc = readtable([SavePath '\ParticipantInfo_BIDS.xlsx'],'Sheet','DESC');
     PartInfoDesc = table2cell(PartInfoDesc);
 
 % If loading previous excel file
@@ -352,7 +355,7 @@ LoadSTUDY = questdlg('Would you like to load an existing EEGLAB STUDY ?', ...
 
 if strcmp(LoadSTUDY,'NO')
     % Create folder for temporary .set storage
-    mkdir TEMP
+    mkdir([SavePath '\DATA'])
 
     % Epitome of UI
     h = waitbar(0,{'Loading' , ['Progress: ' '0 /' num2str(size(FileList,1))]});
@@ -498,17 +501,17 @@ if strcmp(LoadSTUDY,'NO')
             end
         end
 
-        % Save file as .set in temporary folder (will be emptied at the end)
+        % Save file as .set 
         FileNameSet = strrep(EEG.filename,Extension,'.set');
-        pop_saveset(EEG,[pwd '\TEMP\' FileNameSet]);  
+        pop_saveset(EEG,[SavePath '\DATA\' FileNameSet]);  
 
-        % Reload dataset (.set) from temp. folder
-        EEG = pop_loadset(FileNameSet,[pwd '\TEMP\']);
-        [ALLEEG, EEG, CURRENTSET] = eeg_store( ALLEEG, EEG, i);
+        % Reload dataset (.set) from save folder
+        EEG = pop_loadset(FileNameSet,[SavePath '\DATA\']);
+        [ALLEEG, EEG, CURRENTSET] = eeg_store(ALLEEG, EEG, i);
 
         % Filling the STUDY structure
         [STUDY,ALLEEG] = std_editset(STUDY, ALLEEG,'name', StudyName, 'commands',...
-        {{'index' i 'load' [pwd '\TEMP\' FileNameSet] 'subject' num2str(SubjList(i))}},'updatedat','off'); 
+        {{'index' i 'load' [SavePath '\DATA\' FileNameSet] 'subject' num2str(SubjList(i))}},'updatedat','off'); 
     end
 
     % Waitbar end
@@ -516,10 +519,10 @@ if strcmp(LoadSTUDY,'NO')
 
     % Save STUDY
     [STUDY EEG] = pop_savestudy(STUDY, EEG, 'filename',[StudyName '.study'],...
-    'filepath',pwd);
+    'filepath',SavePath);
 
     % Reloading the STUDY
-    [STUDY EEG] = pop_loadstudy('filename', [StudyName '.study'], 'filepath',pwd);
+    [STUDY EEG] = pop_loadstudy('filename', [StudyName '.study'], 'filepath',SavePath);
 else
     % Select .study file to load
     [STUDY_file,STUDY_path] = uigetfile('.study', 'Select the STUDY file you would like to load');

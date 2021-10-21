@@ -2,3 +2,4 @@
 *.study
 TEMP/*
 BIDS_EXPORT/*
+*.set
