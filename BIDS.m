@@ -37,7 +37,7 @@ clear variables;close all;clc % Clear workspace, etc
 addpath([pwd '\Functions'])
 addpath([pwd '\Functions\inputsdlg'])
 addpath([pwd '\Functions\num2words'])
-addpath([pwd '\Functions\eeglab2021.1'])
+addpath([pwd '\eeglab2021.1'])
 
 % Run EEGLAB (necessary to access functions)
 STUDY = []; CURRENTSTUDY = 0; ALLEEG=[]; EEG=[]; CURRENTSET=[]; 
@@ -556,15 +556,7 @@ pop_exportbids(STUDY, EEG,'targetdir',ExportPath)
 %%%% STEP 5: Validate BIDS dataset %%%%
 % Adopting Openneuro's command-line bids-validator
 % https://github.com/bids-standard/bids-validator
-pop_validatebids(ExportPath)
-% Got an error related to .EEGChannelCount, openned an issue on GitHub:
-% https://github.com/sccn/bids-matlab-tools/issues/92
+pop_validatebids(ExportPath);
 
 % prompt output
 fprintf('The script ran successfully and the output can be found in %s.',[pwd '\BIDS_EXPORT'])
-
-%% REMOVE TEMPORARY DATA
-% IF DO SO, WILL NOT BE ABLE TO RELOAD THE STUDY !!! 
-% Removing TEMP folder with content (all .set files generated while creating
-% the STUDY) ! 
-% rmdir([pwd '\TEMP\'],'s');
