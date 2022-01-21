@@ -37,7 +37,7 @@ clear variables;close all;clc % Clear workspace, etc
 addpath([pwd '\Functions'])
 addpath([pwd '\Functions\inputsdlg'])
 addpath([pwd '\Functions\num2words'])
-addpath([pwd '\eeglab2021.1'])
+addpath([pwd '\Functions\eeglab2021.1'])
 
 % Run EEGLAB (necessary to access functions)
 STUDY = []; CURRENTSTUDY = 0; ALLEEG=[]; EEG=[]; CURRENTSET=[]; 
